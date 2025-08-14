@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8" ?>  
+<!DOCTYPE configuration PUBLIC
+    "-//mybatis.org//DTD Config 3.0//EN"  
+    "http://mybatis.org/dtd/mybatis-3-config.dtd">
+
+<configuration>
+	<settings>
+		<setting name="cacheEnabled" value="false" />
+		<setting name="lazyLoadingEnabled" value="false" />
+		<setting name="aggressiveLazyLoading" value="true" />
+	</settings>
+	<!--
+	 <plugins> 
+	    <plugin interceptor="com.dap.dao.interceptor.MySqlInterceptor" /> 
+	    <plugin interceptor="com.dap.dao.interceptor.OracleInterceptor" /> 
+	  </plugins> 
+	 -->
+	<plugins>
+		<plugin interceptor="com.dap.cloud.dao.page.PageInterceptor">
+			<property name="helperDialect" value="mysql" />
+			<property name="supportMethodsArguments" value="true" />
+			<property name="rowBoundsWithCount" value="true" />
+			<property name="dialect" value="com.dap.cloud.dao.page.PageHelper"/>
+		</plugin>
+	</plugins>
+
+</configuration>

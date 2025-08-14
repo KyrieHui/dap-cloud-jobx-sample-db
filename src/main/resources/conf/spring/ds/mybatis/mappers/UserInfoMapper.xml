@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dap.cloud.jobx.DBsample.bank.mapper.UserInfoMapper">
+
+    <resultMap id="BaseResultMap" type="com.dap.cloud.jobx.DBsample.bank.model.UserInfo">
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="user_name" property="userName" jdbcType="VARCHAR" />
+        <result column="user_code" property="userCode" jdbcType="VARCHAR" />
+        <result column="base" property="base" jdbcType="DOUBLE" />
+        <result column="account_balance" property="accountBalance" jdbcType="DOUBLE" />
+        <result column="interest_settlement_date" property="interestSettlementDate" jdbcType="DATETIMEOFFSET" />
+        <result column="interest_amount" property="interestAmount" jdbcType="DOUBLE" />
+    </resultMap>
+
+    <resultMap id="ExtResultMap" type="com.dap.cloud.jobx.DBsample.bank.model.ExtUserInfo">
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="user_name" property="userName" jdbcType="VARCHAR" />
+        <result column="user_code" property="userCode" jdbcType="VARCHAR" />
+        <result column="base" property="base" jdbcType="DOUBLE" />
+        <result column="account_balance" property="accountBalance" jdbcType="DOUBLE" />
+        <result column="interest_settlement_date" property="interestSettlementDate" jdbcType="DATETIMEOFFSET" />
+        <result column="interest_amount" property="interestAmount" jdbcType="DOUBLE" />
+        <result column="deposit_type" property="depositType" jdbcType="BIGINT" />
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id, user_name, user_code, interest_settlement_date, base, account_balance, interest_amount
+    </sql>
+
+    <insert id="insert" parameterType="com.dap.cloud.jobx.DBsample.bank.model.UserInfo">
+        insert into user_info (id,user_name, user_code)
+        values (#{id,jdbcType=BIGINT},
+        #{userName,jdbcType=VARCHAR},
+        #{userCode,jdbcType=VARCHAR})
+    </insert>
+
+    <update id="update" parameterType="com.dap.cloud.jobx.DBsample.bank.model.UserInfo">
+        update user_info
+        <set>
+            <if test="userName != null">
+                user_name = #{userName,jdbcType=VARCHAR},
+            </if>
+            <if test="userCode != null">
+                user_code = #{userCode,jdbcType=VARCHAR},
+            </if>
+            <if test="interestSettlementDate != null">
+                interest_settlement_date = #{interestSettlementDate,jdbcType=DATETIMEOFFSET},
+            </if>
+            <if test="base != null">
+                base = #{base,jdbcType=DOUBLE},
+            </if>
+            <if test="accountBalance != null">
+                account_balance = #{accountBalance,jdbcType=DOUBLE},
+            </if>
+            <if test="interestAmount != null">
+                interest_amount = #{interestAmount,jdbcType=DOUBLE},
+            </if>
+        </set>
+        where user_code= #{userCode,jdbcType=VARCHAR}
+    </update>
+    <update id="resetInterestSettlementDate">
+        update user_info set interest_settlement_date = '2020-04-25 15:12:01'
+    </update>
+
+    <delete id="deleteAll">
+        delete from user_info
+    </delete>
+
+    <select id="selectByUserCode" parameterType="java.lang.String" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List" />
+        from user_info
+        where user_code = #{userCode,jdbcType=VARCHAR}
+    </select>
+
+    <select id="selectByShardingItem" resultMap="BaseResultMap" parameterType="java.lang.Integer">
+        select
+        <include refid="Base_Column_List" />
+        from user_info
+        where id % 2 = #{shardingItem}
+    </select>
+
+    <select id="selectByShardingItems" resultMap="ExtResultMap">
+        select
+        u.id, u.user_name, u.user_code, u.interest_settlement_date, u.base, u.account_balance, u.interest_amount, a.deposit_type
+        from user_info u left join amount_info a on u.user_code = a.user_code
+        where mod(u.id,#{shardingTotalCount, jdbcType=BIGINT})=#{shardingItem,jdbcType=BIGINT} limit #{start}, #{size}
+    </select>
+
+    <select id="selectByUserCodeList" resultMap="BaseResultMap">
+        select <include refid="Base_Column_List"/>
+        from user_info
+        where user_code in <foreach collection="userCodeList" item="item" open="(" close=")" separator=",">
+        #{item}
+    </foreach>
+    </select>
+
+    <update id="batchUpdate">
+        <foreach collection="userInfoList" item="user" index="user"  separator=";">
+            update user_info
+            <set>
+                <!-- user_name = #{user.userName}, user_code = #{user.userCode}, interest_settlement_date = #{user.interestSettlementDate},base = #{user.base},account_balance = #{user.accountBalance},interest_amount = #{user.interestAmount} -->
+                <if test="user.userName != null">
+                    user_name = #{user.userName,jdbcType=VARCHAR},
+                </if>
+                <if test="user.userCode != null">
+                    user_code = #{user.userCode,jdbcType=VARCHAR},
+                </if>
+                <if test="user.interestSettlementDate != null">
+                    interest_settlement_date = #{user.interestSettlementDate,jdbcType=DATETIMEOFFSET},
+                </if>
+                <if test="user.base != null">
+                    base = #{user.base,jdbcType=DOUBLE},
+                </if>
+                <if test="user.accountBalance != null">
+                    account_balance = #{user.accountBalance,jdbcType=DOUBLE},
+                </if>
+                <if test="user.interestAmount != null">
+                    interest_amount = #{user.interestAmount,jdbcType=DOUBLE},
+                </if>
+            </set>
+            where id =#{user.id}
+        </foreach>
+    </update>
+
+</mapper>

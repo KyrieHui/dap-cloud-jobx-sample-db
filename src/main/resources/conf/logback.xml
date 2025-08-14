@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false" scan="true" scanPeriod="60 seconds">
+
+	<!--定义日志文件的存储地址 勿在 LogBack 的配置中使用相对路径 -->
+	<property name="APP_NAME" value="dap-cloud-jobx-sample" />
+	<property name="LOG_HOME" value="../logs/dap-cloud-jobx-sample" />
+
+	<property name="TRACE_MSG"
+			  value="&lt;_TRANS&gt;traceid=%X{TraceId},rpcId=%X{RpcId},ExtendSeqNo=%X{ExternalTranSeqNo},LogTime=%d{yyyy-MM-dd HH:mm:ss.SSS},%msg&lt;/_TRANS&gt;%n" />
+	<!-- 格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度%msg：日志消息，%n是换行符 -->
+	<property name="LOGGER_MSG" value="- | %d{yyyy-MM-dd HH:mm:ss.SSS} | %level | ${HOSTNAME} | %thread |%logger{512} &gt; %c:%L | %X{TraceId} | %X{ExternalTranSeqNo} | %msg | %n " />
+	<property name="MONITOR_MSG" value="%d{yyyy-MM-dd HH:mm:ss.SSS} | %msg%n" />
+	<property name="FILE_CHARSET" value="utf-8" />
+	<property name="FILE_MAX_HISTORY" value="30" /><!-- 30天之后，就会删除旧的日志 -->
+	<property name="FILE_MAX_SIZE" value="30MB" /><!-- 单个日志文件最多30MB -->
+	<property name="TOTAL_MAX_SIZE" value="20GB" /><!-- 指定总的上限大小 -->
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<!-- encoder 默认配置为PatternLayoutEncoder -->
+		<encoder>
+			<charset>${FILE_CHARSET}</charset>
+			<pattern>${LOGGER_MSG}</pattern>
+		</encoder>
+	</appender>
+
+	<!-- 按照每天生成日志文件 -->
+	<appender name="ROLLING_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_HOME}/${APP_NAME}_all.log</file>
+		<!-- 按照固定窗口模式生成日志文件，当文件大于50MB时，生成新的日志文件。窗口大小是1到3，当保存了10个日志文件后，将覆盖最早的日志。 -->
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<FileNamePattern>${LOG_HOME}/%d{yyyyMMdd}/${APP_NAME}_all_%i.log</FileNamePattern>
+			<maxFileSize>${FILE_MAX_SIZE}</maxFileSize>
+			<maxHistory>${FILE_MAX_HISTORY}</maxHistory>
+			<totalSizeCap>${TOTAL_MAX_SIZE}</totalSizeCap>
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<charset>${FILE_CHARSET}</charset>
+			<pattern>${LOGGER_MSG}</pattern>
+		</encoder>
+	</appender>
+	<appender name="FILE" class="ch.qos.logback.classic.AsyncAppender">
+		<!-- 不丢失日志，默认的，如果队列的80%已满，则会丢丢弃TRACE、DEBUG、INFO级别的日志 -->
+		<discardingThreshold>0</discardingThreshold>
+		<!-- 更改默认的队列的深度，该值会影响性能，默认值为256 -->
+		<queueSize>512</queueSize>
+		<appender-ref ref="ROLLING_FILE" />
+	</appender>
+
+	<!-- 按照每天生成trace日志文件 -->
+	<appender name="TRACELOG_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_HOME}/${APP_NAME}_trace.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<!-- 日志文件输出的文件名 -->
+			<FileNamePattern>${LOG_HOME}/%d{yyyyMMdd}/${APP_NAME}_trace_%i.log</FileNamePattern>
+			<!-- 日志文件保留天数 -->
+			<maxFileSize>${FILE_MAX_SIZE}</maxFileSize>
+			<maxHistory>${FILE_MAX_HISTORY}</maxHistory>
+			<totalSizeCap>${TOTAL_MAX_SIZE}</totalSizeCap>
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<charset>${FILE_CHARSET}</charset>
+			<pattern>${TRACE_MSG}</pattern>
+		</encoder>
+
+	</appender>
+	<appender name="TRACELOG" class="ch.qos.logback.classic.AsyncAppender">
+		<!-- 不丢失日志，默认的，如果队列的80%已满，则会丢丢弃TRACE、DEBUG、INFO级别的日志 -->
+		<discardingThreshold>0</discardingThreshold>
+		<!-- 更改默认的队列的深度，该值会影响性能，默认值为256 -->
+		<queueSize>512</queueSize>
+		<appender-ref ref="TRACELOG_FILE" />
+	</appender>
+
+
+	<!-- 按照每天生成异常日志文件 ,不记录堆栈 -->
+	<appender name="FILE_ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>ERROR</level>
+			<OnMismatch>DENY</OnMismatch>
+			<OnMatch>ACCEPT</OnMatch>
+		</filter>
+		<file>${LOG_HOME}/${APP_NAME}_err.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<!-- 日志文件输出的文件名 -->
+			<FileNamePattern>${LOG_HOME}/%d{yyyyMMdd}/${APP_NAME}_err_%i.log</FileNamePattern>
+			<!-- 日志文件保留天数 -->
+			<maxFileSize>${FILE_MAX_SIZE}</maxFileSize>
+			<maxHistory>${FILE_MAX_HISTORY}</maxHistory>
+			<totalSizeCap>${TOTAL_MAX_SIZE}</totalSizeCap>
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<charset>${FILE_CHARSET}</charset>
+			<pattern>${LOGGER_MSG}</pattern>
+		</encoder>
+
+	</appender>
+
+	<!-- 按照每天生成警告日志文件 -->
+	<appender name="FILE_WARN" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.classic.filter.LevelFilter">
+			<level>WARN</level>
+			<OnMismatch>DENY</OnMismatch>
+			<OnMatch>ACCEPT</OnMatch>
+		</filter>
+		<file>${LOG_HOME}/${APP_NAME}_warn.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<!-- 日志文件输出的文件名 -->
+			<FileNamePattern>${LOG_HOME}/%d{yyyyMMdd}/${APP_NAME}_warn_%i.log</FileNamePattern>
+			<!-- 日志文件保留天数 -->
+			<maxFileSize>${FILE_MAX_SIZE}</maxFileSize>
+			<maxHistory>${FILE_MAX_HISTORY}</maxHistory>
+			<totalSizeCap>${TOTAL_MAX_SIZE}</totalSizeCap>
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<charset>${FILE_CHARSET}</charset>
+			<pattern>${LOGGER_MSG}</pattern>
+		</encoder>
+
+	</appender>
+
+	<!-- application监控文件 -->
+	<appender name="APPLICATION_MONITOR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_HOME}/${APP_NAME}_applicationMonitor.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<!-- 日志文件输出的文件名 -->
+			<FileNamePattern>${LOG_HOME}/%d{yyyyMMdd}/${APP_NAME}_applicationMonitor_%i.log</FileNamePattern>
+			<!-- 日志文件保留天数 -->
+			<maxFileSize>${FILE_MAX_SIZE}</maxFileSize>
+			<maxHistory>${FILE_MAX_HISTORY}</maxHistory>
+			<totalSizeCap>${TOTAL_MAX_SIZE}</totalSizeCap>
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<charset>${FILE_CHARSET}</charset>
+			<pattern>${MONITOR_MSG}</pattern>
+		</encoder>
+
+	</appender>
+
+	<!-- service监控文件 -->
+	<appender name="SERVICE_MONITOR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${LOG_HOME}/${APP_NAME}_serviceMonitor.log</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<!-- 日志文件输出的文件名 -->
+			<FileNamePattern>${LOG_HOME}/%d{yyyyMMdd}/${APP_NAME}_serviceMonitor_%i.log</FileNamePattern>
+			<!-- 日志文件保留天数 -->
+			<maxFileSize>${FILE_MAX_SIZE}</maxFileSize>
+			<maxHistory>${FILE_MAX_HISTORY}</maxHistory>
+			<totalSizeCap>${TOTAL_MAX_SIZE}</totalSizeCap>
+		</rollingPolicy>
+		<encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+			<charset>${FILE_CHARSET}</charset>
+			<pattern>${MONITOR_MSG}</pattern>
+		</encoder>
+
+	</appender>
+
+
+	<logger name="tracelog" level="trace" additivity="false">
+		<appender-ref ref="TRACELOG" />
+	</logger>
+	<logger name="application" level="trace" additivity="false">
+		<appender-ref ref="APPLICATION_MONITOR" />
+	</logger>
+	<logger name="service" level="trace" additivity="false">
+		<appender-ref ref="SERVICE_MONITOR" />
+	</logger>
+
+	<logger name="trans_error" level="ERROR" additivity="false">
+		<appender-ref ref="FILE_ERROR" />
+	</logger>
+
+	<logger name="org.springframework" level="INFO" />
+	<logger name="org.apache" level="WARN" />
+	<logger name="org.eclipse.jetty" level="WARN" />
+	<logger name="org.mybatis" level="DEBUG" />
+	<logger name="com.github.pagehelper" level="WARN" />
+	<logger name="ch.qos.logback" level="ERROR"></logger>
+	<logger name="org.mortbay" level="DEBUG" />
+	<logger name="org.quartz" level="WARN" />
+	<logger name="org.quartz.plugins.management" level="ERROR" />
+	<logger name="com.alibaba.dubbo" level="INFO" />
+	<logger name="com.alibaba.druid" level="WARN" />
+	<logger name="com.dangdang.ddframe.job" level="INFO" />
+	<logger name="org.mybatis.spring" level="INFO"></logger>
+	<logger name="com.dap.cloud" level="TREACE"></logger>
+	<logger name=" com.dap.cloud.jobx.bus" level="INFO" />
+
+	<root level="DEBUG">
+		<appender-ref ref="STDOUT" />
+		<appender-ref ref="FILE" />
+		<appender-ref ref="FILE_WARN" />
+	</root>
+</configuration>

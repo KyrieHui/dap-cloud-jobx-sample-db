@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:p="http://www.springframework.org/schema/p" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+	http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd
+	http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+	http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop.xsd
+	http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util.xsd">
+
+	<!-- datasource config -->
+	<bean id="dbPasswordCallback" class="com.dap.cloud.dao.druid.DBPasswordCallback" lazy-init="true" />
+
+	<bean id="batchPlatDataSource" class="com.alibaba.druid.pool.DruidDataSource" init-method="init" destroy-method="close">
+		<property name="driverClassName" value="${business.datasource.driverClassName}" />
+		<property name="url" value="${business.datasource.url}" />
+		<property name="username" value="${business.datasource.username}" />
+		<property name="password" value="${business.datasource.password}" />
+
+		<property name="passwordCallback" ref="dbPasswordCallback" />
+		<property name="filters" value="${datasource.filters}" />
+		<property name="connectionProperties" value="${datasource.connectionProperties}" />
+		<property name="initialSize" value="${datasource.initialSize}" />
+		<property name="minIdle" value="${datasource.minIdle}" />
+		<property name="maxActive" value="${datasource.maxActive}" />
+		<!-- 配置获取连接等待超时的时间 -->
+		<property name="maxWait" value="${datasource.maxWait}" />
+		<!-- 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位是毫秒 -->
+		<property name="timeBetweenEvictionRunsMillis" value="${datasource.timeBetweenEvictionRunsMillis}" />
+		<!-- 配置一个连接在池中最小生存的时间，单位是毫秒 -->
+		<property name="minEvictableIdleTimeMillis" value="${datasource.minEvictableIdleTimeMillis}" />
+		<property name="validationQuery" value="${datasource.validationQuery}" />
+		<property name="testWhileIdle" value="${datasource.testWhileIdle}" />
+		<property name="testOnBorrow" value="${datasource.testOnBorrow}" />
+		<property name="testOnReturn" value="${datasource.testOnReturn}" />
+		<!-- 打开PSCache，并且指定每个连接上PSCache的大小 -->
+		<property name="poolPreparedStatements" value="${datasource.poolPreparedStatements}" />
+		<property name="maxPoolPreparedStatementPerConnectionSize"
+			value="${datasource.maxPoolPreparedStatementPerConnectionSize}" />
+		<!-- 打开removeAbandoned功能 -->
+		<property name="removeAbandoned" value="${datasource.removeAbandoned}" />
+		<!-- 1800秒，也就是30分钟 -->
+		<property name="removeAbandonedTimeout" value="${datasource.removeAbandonedTimeout}" />
+		<!-- 关闭abanded连接时输出错误日志 -->
+		<property name="logAbandoned" value="${datasource.logAbandoned}" />
+	</bean>
+
+
+
+	<bean id="vendorProperties" class="org.springframework.beans.factory.config.PropertiesFactoryBean">
+		<property name="properties">
+			<props>
+				<prop key="Oracle">oracle</prop>
+				<prop key="MySQL">mysql</prop>
+				<prop key="H2">H2</prop>
+				<prop key="SQLServer">SQLServer</prop>
+				<prop key="DB2">DB2</prop>
+				<prop key="PostgreSQL">PostgreSQL</prop>
+				<prop key="DM">DM</prop>
+				<prop key="Trafodion">Trafodion</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="databaseIdProvider" class="org.apache.ibatis.mapping.VendorDatabaseIdProvider">
+		<property name="properties" ref="vendorProperties" />
+	</bean>
+
+	<!-- 配置MyBatis的sqlSessionFactory -->
+	<bean id="batchPlatSqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<property name="dataSource" ref="batchPlatDataSource" />
+		<property name="databaseIdProvider" ref="databaseIdProvider" />
+		<property name="configLocation" value="classpath:conf/spring/ds/mybatis/mybatis-config.xml" />
+		<property name="mapperLocations">
+			<list>
+				<value>classpath*:conf/spring/ds/mybatis/mappers/*.xml</value>
+			</list>
+		</property>
+	</bean>
+	<bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+		<property name="basePackage" value="com.dap.cloud.jobx.DBsample" />
+		<property name="sqlSessionFactoryBeanName" value="batchPlatSqlSessionFactory"></property>
+	</bean>
+
+	<!-- Spring数据源事务管理器：org.springframework.jdbc.datasource.DataSourceTransactionManager -->
+	<bean id="batchPlatTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="batchPlatDataSource" />
+		<qualifier value="batchPlatTransactionManager" />
+	</bean>
+
+	<!-- JdbcTemplate数据源 -->
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="batchPlatDataSource" />
+	</bean>
+
+	<bean id="checkJobExecutionEnvironment" class="com.dap.cloud.jobx.core.handler.check.JobCheckStrategyImpl">
+		<property name="sql" value="select sysdate()"></property>
+		<property name="jdbcTemplate" ref="jdbcTemplate"></property>
+	</bean>
+
+</beans>
+
